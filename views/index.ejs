@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+  <body>
+    <nav>
+      <h1>Hacker<span>Kernel</span></h1>
+    </nav>
+    <h1>Create a User</h1>
+    <form action="/create-user" method="post" onsubmit="return validateEmail()">
+      <input required type="text" name="name" placeholder="e.g. Aakash Nishad ">
+      <input required type="email" name="email" placeholder="demo@example.com">
+      <input required type="text" id="mobileNumber" name="mobile" placeholder="+91 1234567890"> <br> <br>
+      <p id="validationMessage"></p> <br>
+      <input type="submit" value="Create a User"> <br> <br>
+    </form>
+    <h1>Add Tasks for the User</h1>
+    <form action="/create-task" method="post">
+      <select name="user">
+        <% for(let i of users){ %>
+          <option value="<%=i.name%>"><%=i.name%> | <%=i.email %></option>
+        <% } %>
+      </select>
+      <input type="text" required name="task_name" placeholder="Task Name">
+      <select name="task_type">
+        <option value="pending">Pending</option>
+        <option value="done">Done</option> <br>
+      </select>
+      <br>
+      <br>
+      <input type="submit" value="Add Task"> <br> <br>
+    </form>
+
+    <h1>Task Assigned to Users:</h1>
+
+    <table style="width:100%">
+      <% if(users){ %>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Mobile No.</th>
+        <th>Task Name</th>
+        <th>Task Type</th>
+        <!-- <th>Action</th> -->
+      </tr>
+        <% for(let i of tasks){ %>
+          <tr>
+            <% let findIndex = users.findIndex(x => x.name == i.user) %>
+            <td><%= users[findIndex].name %></td>
+            <td><%= users[findIndex].email %></td>
+            <td><%= users[findIndex].mobile %></td>
+            <td><%=i.task_name%></td>
+            <td>
+              <form class="update-task-form" data-id="<%=i._id%>">
+                <select name="task_type" class="task_type_call" id="tt-<%=i._id%>">
+                  <option value="pending" <%= i.task_type === 'pending' ? 'selected' : '' %>>Pending</option>
+                  <option value="done" <%= i.task_type === 'done' ? 'selected' : '' %>>Done</option>
+                </select>
+                <button style="background-color: rgb(61, 61, 61); border-radius: 8px; color: white; padding: 10px; margin-left: 25vh;" type="button" class="update-task-button">Update Task</button>
+              </form>
+            </td>
+          </tr>
+        <% } %>
+      <% } %>
+    </table>
+
+    <h1>Export all the Users & There tasks</h1>
+
+    <button class="export-button" onclick="window.location.href = '/export-sheet'">Generate Excel-Sheet</button>
+
+    <script>
+      function validateMobileNumber() {
+        const numberInput = document.getElementById('mobileNumber');
+        const number = numberInput.value.replaceAll(/\s/g,'');
+
+        const mobileNumberPattern = /^(?:\+?91)?[6-9]\d{9}$/;
+
+        const isValid = mobileNumberPattern.test(number);
+
+        //  validationsss
+        const validationMessage = document.getElementById('validationMessage');
+        if (isValid) {
+          validationMessage.textContent = 'Mobile number is valid.';
+          validationMessage.style.color = 'green';
+          document.querySelector('input[type="submit"]').disabled = false;
+        } else {
+          validationMessage.textContent = 'Mobile number is invalid.';
+          validationMessage.style.color = 'red';
+          document.querySelector('input[type="submit"]').disabled = true;
+        }
+      }
+
+      document.querySelector('#mobileNumber').addEventListener('keyup',()=>{
+        validateMobileNumber();
+      })
+      
+      // ajax call to update 
+      document.querySelectorAll('.task_type_call').forEach((item)=>{
+        item.addEventListener('change',()=>{
+          $.ajax({
+          type: 'POST',
+          url: '/update-task_type/'+item.id.split('t')[1],
+          data: {task_type:item.value}, 
+          success: function(response) {}
+          });
+        })
+      })
+
+      let users =  <%- JSON.stringify(users) %>;
+
+      // validating duplicate email
+      function validateEmail() {
+        let email = document.querySelector('input[name="email"]').value;
+        console.log(email)
+        let findIndex = users.findIndex(x => x.email == email);
+        if(findIndex != -1){
+          alert("Email address already exists");
+          return false;
+        }
+      }
+      document.querySelectorAll('.update-task-button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const form = button.closest('.update-task-form');
+      const taskId = form.getAttribute('data-id');
+      const taskType = form.querySelector('.task_type_call').value;
+
+      $.ajax({
+        type: 'POST',
+        url: '/update-task_type/' + taskId,
+        data: { task_type: taskType },
+        success: function(response) {
+          alert('Task updated successfully');
+        },
+        error: function(error) {
+          alert('Failed to update taske try again.');
+        }
+      });
+    });
+  });
+      </script>
+  </body>
+</html>
